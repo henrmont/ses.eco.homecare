@@ -1,0 +1,101 @@
+<section class="archive-patients-container">
+  <div class="table-card">
+    <div class="search-bar">
+      <mat-form-field appearance="outline">
+        <mat-label>Buscar</mat-label>
+        <input matInput (keyup)="applyFilter($event)" placeholder="Buscar paciente arquivado" #archiveInput>
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    <table mat-table [dataSource]="archivedDataSource" matSort #archiveSort="matSort">
+      <!-- Nome -->
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> Nome </th>
+        <td mat-cell *matCellDef="let element"> {{ element.name }} </td>
+      </ng-container>
+
+      <!-- CNS -->
+      <ng-container matColumnDef="cns">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> CNS </th>
+        <td mat-cell *matCellDef="let element">
+          {{ element.cns !== '-' ? (element.cns | mask: '000 0000 0000 0000') : '-' }}
+        </td>
+      </ng-container>
+
+      <!-- Documento -->
+      <ng-container matColumnDef="document">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> Documento </th>
+        <td mat-cell *matCellDef="let element">
+          {{ element.document !== '-' ? (element.document | mask: element.document_type === 'CPF' ? '000.000.000-00' : '000000 00 00 0000 0 00000 000 0000000 00') : '-' }}
+        </td>
+      </ng-container>
+
+      <!-- Responsável -->
+      <ng-container matColumnDef="responsible">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> Responsável </th>
+        <td mat-cell *matCellDef="let element"> {{ element.responsible }} </td>
+      </ng-container>
+
+      <!-- Status -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef class="col-center"> Status </th>
+        <td mat-cell *matCellDef="let element" class="col-center">
+          @if (element.status) {
+            <button mat-icon-button type="button" aria-label="Paciente ativo" disabled>
+              <mat-icon class="valid">check</mat-icon>
+            </button>
+          } @else {
+            <button
+              mat-icon-button
+              type="button"
+              aria-label="Ver pendência do paciente"
+              (click)="patientRequirement(element)">
+              <mat-icon class="invalid">priority_high</mat-icon>
+            </button>
+          }
+        </td>
+      </ng-container>
+
+      <!-- Ações -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="col-center"> Ações </th>
+        <td mat-cell *matCellDef="let element" class="col-center actions-cell">
+          <button
+            mat-icon-button
+            type="button"
+            aria-label="Detalhes do paciente"
+            matTooltip="Detalhes do paciente"
+            (click)="patientDetail(element)">
+            <mat-icon>visibility</mat-icon>
+          </button>
+
+          <button
+            mat-icon-button
+            type="button"
+            aria-label="Mover para minha caixa"
+            matTooltip="Mover para minha caixa"
+            (click)="patientMoveFromArchive(element)"
+            [disabled]="checkPermissions('paciente atualizar')">
+            <mat-icon>unarchive</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell col-center" [attr.colspan]="displayedColumns.length">
+          <p>Nenhum resultado encontrado.</p>
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator
+      #archivePaginator
+      [pageSize]="8"
+      [hidePageSize]="true">
+    </mat-paginator>
+  </div>
+</section>

@@ -1,0 +1,56 @@
+import { inject, Injectable, signal, computed } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { HomecareUser as User } from '../models/user.model';
+import { AuthService as CoreAuthService } from '../../core/services/auth-service';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class AuthService {
+  private readonly http = inject(HttpClient);
+  private readonly coreAuthService = inject(CoreAuthService);
+  private readonly apiUrl = `${environment.apiHomecareUrl}/users/me`;
+
+  // 🔒 Estado reativo do HomecareUser
+  private readonly _currentUser = signal<User | null>(null);
+
+  readonly currentUser = this._currentUser.asReadonly();
+  readonly isAuthenticated = computed(() => !!this._currentUser());
+
+  // ➔ Computed resiliente para os tipos profissionais
+  readonly userProfessionalTypes = computed<string[]>(() => {
+    const user = this._currentUser();
+    const professional = user?.professional;
+    if (!professional) return [];
+
+    const rawTypes = (professional as any)?.types || (professional as any)?.type || [];
+    const typesList = Array.isArray(rawTypes) ? rawTypes : [rawTypes];
+
+    return typesList
+      .map((item: any) => (typeof item === 'string' ? item : item?.type || item?.name || ''))
+      .filter((type): type is string => Boolean(type))
+      .map((type) => type.trim());
+  });
+
+  setCurrentUser(user: User | null): void {
+    this._currentUser.set(user);
+    // Atualiza o core AuthService para manter sincronizado com o sistema
+    this.coreAuthService.setCurrentUser(user);
+  }
+
+  getCurrentUser(): User | null {
+    return this._currentUser() || this.coreAuthService.getCurrentUser<User>();
+  }
+
+  getMe(): Observable<User> {
+    return this.http.get<User>(this.apiUrl).pipe(
+      tap((user) => this.setCurrentUser(user))
+    );
+  }
+
+  clearTfdSession(): void {
+    this._currentUser.set(null);
+  }
+}
